@@ -1,21 +1,31 @@
 #!/bin/bash
-# Deploys prerequisites and the todoapp helm chart to an existing kind cluster
-# (create it first: kind create cluster --config cluster.yml --name todo).
-# Safe to run more than once.
+# Creates the kind cluster (if needed), deploys prerequisites and the todoapp helm chart.
+# Run it from the repository root. Safe to run more than once.
 set -euo pipefail
 
-CHART_DIR=".infrastructure/helm-chart/todoapp"
+CLUSTER="todo"
+CHART_DIR="helm-chart/todoapp"
 RELEASE="todoapp"
+
+# 0. Create the kind cluster from cluster.yml (skipped if it already exists)
+if ! kind get clusters | grep -qx "$CLUSTER"; then
+  kind create cluster --config cluster.yml --name "$CLUSTER"
+fi
+kubectl config use-context "kind-$CLUSTER"
 
 # Safety guard: never deploy to anything but a kind cluster
 CONTEXT="$(kubectl config current-context)"
 if [[ "$CONTEXT" != kind-* ]]; then
-  echo "Refusing to run: current kubectl context is '$CONTEXT', expected a kind-* context (e.g. kubectl config use-context kind-todo)" >&2
+  echo "Refusing to run: current kubectl context is '$CONTEXT', expected a kind-* context" >&2
   exit 1
 fi
 
-# 1. Taint the MySQL nodes so that only pods with a matching toleration land there
+# 1. Inspect node labels and taints, then taint the MySQL nodes so that
+#    only pods with a matching toleration land there
+kubectl get nodes --show-labels
+kubectl get nodes -o custom-columns="NAME:.metadata.name,TAINTS:.spec.taints[*].key"
 kubectl taint nodes -l app=mysql app=mysql:NoSchedule --overwrite
+kubectl get nodes -o custom-columns="NAME:.metadata.name,TAINTS:.spec.taints[*].key"
 
 # 2. Ingress controller (kind flavour). Must be ready before the chart creates an Ingress,
 #    otherwise the admission webhook rejects it.
@@ -39,5 +49,5 @@ kubectl rollout status deployment/metrics-server -n kube-system --timeout=300s
 helm dependency update "$CHART_DIR"
 helm upgrade --install "$RELEASE" "$CHART_DIR" -f "$CHART_DIR/values.yaml" --wait --timeout 10m
 
-# 5. Show the result
-kubectl get all,cm,secret,ing -A
+# 5. Save the result to output.log in the repository root
+kubectl get all,cm,secret,ing -A | tee output.log
