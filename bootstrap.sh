@@ -17,9 +17,9 @@ if [[ "$CONTEXT" != kind-* ]]; then
 fi
 
 kubectl get nodes --show-labels
-kubectl get nodes -o custom-columns="NAME:.metadata.name,TAINTS:.spec.taints[*].key"
+kubectl describe nodes | grep -E '^(Name|Taints):'
 kubectl taint nodes -l app=mysql app=mysql:NoSchedule --overwrite
-kubectl get nodes -o custom-columns="NAME:.metadata.name,TAINTS:.spec.taints[*].key"
+kubectl describe nodes | grep -E '^(Name|Taints):'
 
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 kubectl wait --namespace ingress-nginx \

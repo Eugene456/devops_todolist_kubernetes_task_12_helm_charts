@@ -34,8 +34,12 @@ To do the first steps by hand instead:
 ```bash
 kind create cluster --config cluster.yml --name todo
 kubectl get nodes --show-labels
-kubectl get nodes -o custom-columns="NAME:.metadata.name,TAINTS:.spec.taints[*].key"
+kubectl describe nodes | grep -E '^(Name|Taints):'
+kubectl taint nodes -l app=mysql app=mysql:NoSchedule --overwrite
+kubectl describe nodes | grep -E '^(Name|Taints):'
 ```
+
+`todo-worker` and `todo-worker2` must show `Taints: app=mysql:NoSchedule`.
 
 Namespaces are named `<chart name>-<value from values.yaml>`, i.e. `todoapp-todoapp`
 and `mysql-mysql` with the default values.

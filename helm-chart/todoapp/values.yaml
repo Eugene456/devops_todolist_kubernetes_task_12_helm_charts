@@ -21,10 +21,10 @@ secrets:
 resources:
   requests:
     memory: "128Mi"
-    cpu: "40m"
+    cpu: "100m"
   limits:
-    memory: "128Mi"
-    cpu: "40m"
+    memory: "256Mi"
+    cpu: "500m"
 
 minReplicas: 2
 maxReplicas: 5

@@ -31,7 +31,7 @@ spec:
         - name: {{ .Chart.Name }}
           containerPort: 3306
         volumeMounts:
-        - name: data
+        - name: {{ .Chart.Name }}-data
           mountPath: /var/lib/mysql
           subPath: {{ .Chart.Name }}
         - name: config-map
@@ -65,7 +65,7 @@ spec:
         {{- toYaml .Values.affinity | nindent 8 }}
   volumeClaimTemplates:
   - metadata:
-      name: data
+      name: {{ .Chart.Name }}-data
     spec:
       accessModes: ["ReadWriteOnce"]
       resources:
